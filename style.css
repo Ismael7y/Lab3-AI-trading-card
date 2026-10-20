@@ -1,0 +1,320 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: linear-gradient(135deg, #1b4332, #52b788);
+  color: #222;
+}
+
+/* Centers the card on the page */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 1.5rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+}
+
+/* Holds both faces and does the flip */
+.card-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+}
+
+.card.flipped .card-inner {
+  transform: perspective(1000px) rotateY(180deg);
+}
+
+.card-face {
+  background: #f4fce3;
+  border: 8px solid #2b8a3e;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* The back sits on top of the front, turned around */
+.card-back {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  background: linear-gradient(135deg, #69db7c, #2b8a3e);
+  color: #fff;
+  transform: rotateY(180deg);
+}
+
+.card-back h2 {
+  margin: 0 0 1rem;
+  font-size: 1.8rem;
+}
+
+.fun-fact {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.flip-hint {
+  margin: 2rem 0 0;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #37b24d;
+  color: #fff;
+}
+
+.card-name {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.card-type {
+  padding: 0.2rem 0.7rem;
+  background: #fff;
+  color: #2b8a3e;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.card-art {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 160px;
+  margin: 1rem;
+  background: linear-gradient(135deg, #2b8a3e, #a9e34b);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Dragon Ball style power-up aura around the cat */
+.aura {
+  position: relative;
+  display: flex;
+}
+
+/* The blur is on this wrapper so it softens the flames after their spiky shape is cut out */
+.aura-flames {
+  position: absolute;
+  top: -45%;
+  bottom: 0;
+  left: -22%;
+  right: -22%;
+  filter: blur(3px);
+}
+
+/* Each flame is a spiky shape that flickers up and down */
+.flame {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(12% 100%, 4% 62%, 15% 72%, 11% 34%, 24% 56%, 27% 14%, 38% 42%, 50% 0%, 62% 42%, 73% 14%, 76% 56%, 89% 34%, 85% 72%, 96% 62%, 88% 100%);
+  transform-origin: bottom center;
+  animation: aura-flicker 0.45s ease-in-out infinite alternate;
+}
+
+.flame-inner {
+  inset: 0 8%;
+  background: linear-gradient(to top, #ffffff, #e0aaff 60%, rgba(199, 125, 255, 0.5));
+  animation-duration: 0.35s;
+  animation-delay: -0.15s;
+  animation-direction: alternate-reverse;
+}
+
+.card-sticker {
+  position: relative;
+  z-index: 1;
+  height: 130px;
+  animation: aura-glow 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes aura-flicker {
+  from {
+    transform: scaleX(0.97) scaleY(0.9) skewX(-2deg);
+  }
+  to {
+    transform: scaleX(1.03) scaleY(1.06) skewX(2deg);
+  }
+}
+
+/* The glow hugs the cat's outline because drop-shadow follows transparency */
+@keyframes aura-glow {
+  from {
+    filter: drop-shadow(0 0 4px #e0aaff) drop-shadow(0 0 10px #9d4edd);
+  }
+  to {
+    filter: drop-shadow(0 0 6px #f3d9ff) drop-shadow(0 0 18px #c77dff) drop-shadow(0 0 28px #7b2cbf);
+  }
+}
+
+/* Mini-game */
+.game {
+  width: 100%;
+  max-width: 560px;
+  padding: 1rem;
+  background: #f4fce3;
+  border: 8px solid #2b8a3e;
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.game h2 {
+  margin: 0 0 0.75rem;
+  color: #2b8a3e;
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #5c94fc;
+  border-radius: 8px;
+  image-rendering: pixelated;
+}
+
+#game:focus-visible {
+  outline: 3px solid #ffd43b;
+  outline-offset: 2px;
+}
+
+.game-help {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+  color: #2b5f34;
+}
+
+/* On-screen buttons, only shown on touch screens */
+.touch-controls {
+  display: none;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.touch-controls button {
+  flex: 1;
+  padding: 0.75rem;
+  font-size: 1.5rem;
+  color: #fff;
+  background: #37b24d;
+  border: none;
+  border-radius: 12px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .touch-controls {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flame,
+  .card-sticker {
+    animation: none;
+  }
+}
+
+.card-body {
+  padding: 0 1rem;
+}
+
+.card-major {
+  margin: 0 0 0.75rem;
+}
+
+.card-stats {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.card-stats li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.stat-name {
+  width: 3.5rem;
+  font-weight: bold;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 10px;
+  background: #d8f5a2;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.stat-fill {
+  display: block;
+  height: 100%;
+  background: #37b24d;
+  border-radius: 999px;
+}
+
+.stat-value {
+  width: 1.75rem;
+  text-align: right;
+  font-weight: bold;
+}
+
+.card-ability {
+  padding: 0.75rem;
+  background: #e9fac8;
+  border-radius: 12px;
+}
+
+.card-ability h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  color: #2b8a3e;
+}
+
+.card-ability p {
+  margin: 0;
+}
+
+.card-footer {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #5c7c5f;
+}
+
+.card-footer p {
+  margin: 0;
+}
