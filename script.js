@@ -1,924 +1,598 @@
-// Find the card on the page
+// Card page: tilt and flip the card, fill it in from the saved data,
+// and run the welcome / setup popup. Shared helpers live in site.js.
+
+// =====================================================================
+// The card
+// =====================================================================
+
 const card = document.getElementById("card");
+const cardFront = card.querySelector(".card-front");
+const cardBack = card.querySelector(".card-back");
+const flipButton = document.getElementById("flip-button");
+const cardStatus = document.getElementById("card-status");
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 // Tilt the card a little toward the mouse, like holding a real card
 card.addEventListener("mousemove", (event) => {
+  if (reduceMotion.matches) return;
   const box = card.getBoundingClientRect();
   const x = (event.clientX - box.left) / box.width - 0.5;
   const y = (event.clientY - box.top) / box.height - 0.5;
   card.style.transform = `perspective(600px) rotateY(${x * 12}deg) rotateX(${-y * 12}deg)`;
 });
 
-// Straighten the card when the mouse leaves
 card.addEventListener("mouseleave", () => {
   card.style.transform = "";
 });
 
-// Flip the card over when it's clicked
-card.addEventListener("click", () => {
-  card.classList.toggle("flipped");
-});
-
-// Let keyboard users flip it too, with Enter or Space
-card.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") {
-    event.preventDefault();
-    card.classList.toggle("flipped");
-  }
-});
-
-
-// =====================================================================
-// Cat World 1-1: a small platformer inspired by the first level of a
-// classic 1985 game. All the art is drawn with code, square by square.
-// =====================================================================
-
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-
-// The level is a grid of 16x16 "tiles". The screen shows 16 x 15 tiles.
-const TILE = 16;
-const ROWS = 15;
-const COLS = 212;
-const VIEW_W = 256;
-const VIEW_H = 240;
-const FLAG_COL = 198;
-const CASTLE_DOOR_X = 204 * TILE;
-
-// The canvas is twice as big as the game so the text looks sharp
-ctx.setTransform(canvas.width / VIEW_W, 0, 0, canvas.height / VIEW_H, 0, 0);
-
-// ---------- Sprites (pixel art) ----------
-// Each letter is one pixel. "." means see-through.
-
-const CAT_HEAD_AND_BODY = [
-  "................",
-  "..........k...k.",
-  "..........kk.kk.",
-  ".k........kkkkk.",
-  ".k.......kkekekk",
-  "..k......kkkpkkk",
-  "..k.......wwwww.",
-  "..k...kkkkkkkk..",
-  "...kkkkkkkkkkk..",
-  "....kkkkkkkkkk..",
-  "....kkkkkkkkkk..",
-  "....kkkkkkkkkk..",
-];
-const CAT_STEP_1 = CAT_HEAD_AND_BODY.concat([
-  "....kkk.....kkk.",
-  "....kk.......kk.",
-  "....kk.......kk.",
-  "....kk.......kk.",
-]);
-const CAT_STEP_2 = CAT_HEAD_AND_BODY.concat([
-  ".....kkk..kkk...",
-  "......kk..kk....",
-  ".....kk....kk...",
-  "....kk......kk..",
-]);
-const CAT_JUMP = CAT_HEAD_AND_BODY.concat([
-  "...kkk.....kkk..",
-  "..kk.........kk.",
-  ".kk...........k.",
-  "................",
-]);
-const CAT_COLORS = { k: "#111111", e: "#c6ff3d", p: "#ff8fb1", w: "#e9ecef" };
-
-const MOUSE_TOP = [
-  "................",
-  "................",
-  "................",
-  "................",
-  "................",
-  "................",
-  "...dd...........",
-  "..dppd..........",
-  "..dddmmmmmm.....",
-  ".dkmmmmmmmmm....",
-  "pmmmmmmmmmmmm...",
-  ".mmmmmmmmmmmmd..",
-  "..mmmmmmmmmmm.dd",
-  "...mmmmmmmmm...d",
-];
-const MOUSE_STEP_1 = MOUSE_TOP.concat(["....dd...dd.....", "...dd.....dd...."]);
-const MOUSE_STEP_2 = MOUSE_TOP.concat([".....dd.dd......", ".....dd.dd......"]);
-const MOUSE_COLORS = { m: "#9e9e9e", d: "#5f5f5f", p: "#ff8fb1", k: "#111111" };
-
-// Little fish for the celebration bursts
-const FISH = [
-  "..oooo.o",
-  ".kooooo.",
-  ".oooooo.",
-  "..oooo.o",
-];
-const FISH_COLORS = ["#ff922b", "#4dabf7", "#f783ac", "#ffd43b"];
-
-function drawSprite(rows, colors, x, y, flipX, flipY) {
-  for (let r = 0; r < rows.length; r++) {
-    const width = rows[r].length;
-    for (let c = 0; c < width; c++) {
-      const color = colors[rows[r][c]];
-      if (!color) continue;
-      const px = flipX ? width - 1 - c : c;
-      const py = flipY ? rows.length - 1 - r : r;
-      ctx.fillStyle = color;
-      ctx.fillRect(Math.round(x) + px, Math.round(y) + py, 1, 1);
-    }
-  }
+// Only the face you can see is read by screen readers
+function setFlipped(flipped) {
+  card.classList.toggle("flipped", flipped);
+  cardFront.setAttribute("aria-hidden", String(flipped));
+  cardBack.setAttribute("aria-hidden", String(!flipped));
+  flipButton.textContent = flipped ? "↻ Show front" : "↻ Show fun fact";
 }
 
-// ---------- Building the level ----------
-// Tile letters: G ground, B brick, ? question block, U used block,
-// S stair block, T/Y pipe top (left/right), p/q pipe body (left/right)
+card.addEventListener("click", () => setFlipped(!card.classList.contains("flipped")));
+flipButton.addEventListener("click", () => setFlipped(!card.classList.contains("flipped")));
 
-function buildLevel() {
-  const grid = [];
-  for (let y = 0; y < ROWS; y++) grid.push(new Array(COLS).fill(" "));
-  const set = (x, y, tile) => { grid[y][x] = tile; };
-  const pipe = (x, height) => {
-    set(x, 13 - height, "T");
-    set(x + 1, 13 - height, "Y");
-    for (let y = 14 - height; y <= 12; y++) {
-      set(x, y, "p");
-      set(x + 1, y, "q");
-    }
-  };
-  const stairs = (x, height) => {
-    for (let i = 0; i < height; i++) set(x, 12 - i, "S");
-  };
-
-  // Ground, with three pits to jump over
-  const pits = [69, 70, 86, 87, 88, 153, 154];
-  for (let x = 0; x < COLS; x++) {
-    if (!pits.includes(x)) {
-      set(x, 13, "G");
-      set(x, 14, "G");
-    }
-  }
-
-  set(16, 9, "?");
-  set(20, 9, "B"); set(21, 9, "?"); set(22, 9, "B"); set(23, 9, "?"); set(24, 9, "B");
-  set(22, 5, "?");
-  pipe(28, 2); pipe(38, 3); pipe(46, 4); pipe(57, 4);
-
-  set(77, 9, "B"); set(78, 9, "?"); set(79, 9, "B");
-  for (let x = 80; x <= 87; x++) set(x, 5, "B");
-  for (let x = 91; x <= 93; x++) set(x, 5, "B");
-  set(94, 5, "?"); set(94, 9, "B");
-  set(100, 9, "B"); set(101, 9, "B");
-  set(106, 9, "?"); set(109, 9, "?"); set(109, 5, "?"); set(112, 9, "?");
-  set(118, 9, "B");
-  for (let x = 121; x <= 123; x++) set(x, 5, "B");
-  set(128, 5, "B"); set(129, 5, "?"); set(130, 5, "?"); set(131, 5, "B");
-  set(129, 9, "B"); set(130, 9, "B");
-
-  for (let i = 0; i < 4; i++) stairs(134 + i, i + 1);
-  for (let i = 0; i < 4; i++) stairs(140 + i, 4 - i);
-  for (let i = 0; i < 4; i++) stairs(148 + i, i + 1);
-  stairs(152, 4);
-  for (let i = 0; i < 4; i++) stairs(155 + i, 4 - i);
-
-  pipe(163, 2);
-  set(168, 9, "B"); set(169, 9, "B"); set(170, 9, "?"); set(171, 9, "B");
-  pipe(179, 2);
-
-  for (let i = 0; i < 8; i++) stairs(181 + i, i + 1);
-  stairs(189, 8);
-  stairs(FLAG_COL, 1);
-
-  return grid;
+function makeStatRow(stat) {
+  const row = document.createElement("li");
+  const name = document.createElement("span");
+  name.className = "stat-name";
+  name.textContent = stat.name;
+  const bar = document.createElement("span");
+  bar.className = "stat-bar";
+  const fill = document.createElement("span");
+  fill.className = "stat-fill";
+  fill.style.width = `${stat.value}%`;
+  bar.append(fill);
+  const value = document.createElement("span");
+  value.className = "stat-value";
+  value.textContent = String(stat.value);
+  row.append(name, bar, value);
+  return row;
 }
 
-// Where each mouse starts: [column, the row it stands on]
-const MOUSE_STARTS = [
-  [22, 13], [40, 13], [51, 13], [52.5, 13], [80, 5], [82, 5],
-  [97, 13], [98.5, 13], [107, 13], [108.5, 13], [114, 13], [115.5, 13],
-  [124, 13], [125.5, 13], [128, 13], [129.5, 13], [174, 13], [175.5, 13],
+// Writes a card's data into a card front. textContent (not innerHTML) keeps
+// anything a visitor types from being treated as code.
+function renderCard(front, data) {
+  front.querySelector(".card-type").textContent = `${data.typeEmoji} ${data.typeName}`;
+  front.querySelector(".card-major-value").textContent = data.major;
+  front.querySelector(".card-stats").replaceChildren(...data.stats.map(makeStatRow));
+  front.querySelector(".card-ability-name").textContent = `Special Ability: ${data.abilityName}`;
+  front.querySelector(".card-ability-description").textContent = data.abilityDescription;
+}
+
+let currentCard = loadCard();
+renderCard(cardFront, currentCard);
+
+// =====================================================================
+// Setup popup
+// =====================================================================
+
+const dialog = document.getElementById("setup-dialog");
+const form = document.getElementById("setup-form");
+const dialogTitle = document.getElementById("setup-title");
+const stepText = document.getElementById("setup-step-text");
+const dots = document.getElementById("setup-dots");
+const backButton = document.getElementById("setup-back");
+const skipButton = document.getElementById("setup-skip");
+const nextButton = document.getElementById("setup-next");
+const closeButton = document.getElementById("setup-close");
+const dialogBody = dialog.querySelector(".dialog-body");
+const errorSummary = document.getElementById("error-summary");
+const errorSummaryTitle = document.getElementById("error-summary-title");
+const errorSummaryList = document.getElementById("error-summary-list");
+const preview = document.getElementById("card-preview");
+const previewSummary = document.getElementById("card-preview-summary");
+const descriptionInput = document.getElementById("f-ability-description");
+const descriptionCount = document.getElementById("f-ability-description-count");
+const descriptionLive = document.getElementById("f-ability-description-live");
+
+const LIMITS = { major: 40, statName: 12, abilityName: 30, abilityDescription: 120, type: 20 };
+const FIELD_IDS = [
+  "f-major",
+  "f-stat1-name", "f-stat1-value",
+  "f-stat2-name", "f-stat2-value",
+  "f-stat3-name", "f-stat3-value",
+  "f-ability-name", "f-ability-description",
+  "f-type-emoji", "f-type",
+  "f-main-color", "f-accent-color",
 ];
 
-// ---------- Game state ----------
+// Fieldsets of radio buttons, and the name their radios share
+const GROUPS = {
+  "f-type-emoji": "type-emoji",
+  "f-main-color": "main-color",
+  "f-accent-color": "accent-color",
+};
 
-let level, player, mice, effects, camX, flagY;
-let fishBurstsLeft = 0, fishBurstTimer = 0;
-let score = 0, coins = 0, lives = 3, time = 400, timeTick = 0;
-let state = "title";
-let stateTimer = 0;
-let frame = 0;
-const keys = { left: false, right: false, jump: false, run: false };
+function makeRadio(name, value) {
+  const input = document.createElement("input");
+  input.type = "radio";
+  input.name = name;
+  input.value = value;
+  return input;
+}
 
-function resetLevel() {
-  level = buildLevel();
-  // jumpHeld starts true so the key that started the game doesn't make the cat jump
-  player = { x: 3 * TILE, y: 13 * TILE - 14, w: 12, h: 14, vx: 0, vy: 0,
-             onGround: false, facing: 1, jumpHeld: true };
-  mice = MOUSE_STARTS.map(([col, row]) => ({
-    x: col * TILE + 1, y: row * TILE - 10, w: 14, h: 10,
-    vx: -0.5, vy: 0, active: false, dead: null, timer: 0,
+function buildEmojiGrid() {
+  document.getElementById("emoji-grid").replaceChildren(...TYPE_EMOJIS.map((emoji) => {
+    const label = document.createElement("label");
+    label.className = "emoji-choice";
+    label.append(makeRadio("type-emoji", emoji), emoji);
+    return label;
   }));
-  effects = [];
-  camX = 0;
-  flagY = 3 * TILE;
-  time = 400;
-  timeTick = 0;
-  fishBurstsLeft = 0;
-  fishBurstTimer = 0;
 }
 
-function newGame() {
-  score = 0;
-  coins = 0;
-  lives = 3;
-  resetLevel();
-  state = "playing";
+// Preset swatches plus a "Custom" option that opens the system color wheel
+function buildSwatches(containerId, name, presets, customLabel) {
+  const options = presets.map((preset) => {
+    const label = document.createElement("label");
+    label.className = "swatch";
+    const dot = document.createElement("span");
+    dot.className = "swatch-color";
+    dot.style.background = preset.value;
+    label.append(makeRadio(name, preset.value), dot, preset.name);
+    return label;
+  });
+
+  const custom = document.createElement("label");
+  custom.className = "swatch";
+  const customRadio = makeRadio(name, "custom");
+  const wheel = document.createElement("input");
+  wheel.type = "color";
+  wheel.id = `${name}-custom`;
+  wheel.setAttribute("aria-label", customLabel);
+  const selectCustom = () => {
+    customRadio.checked = true;
+    customRadio.dispatchEvent(new Event("change", { bubbles: true }));
+  };
+  wheel.addEventListener("click", selectCustom);
+  wheel.addEventListener("input", selectCustom);
+  custom.append(customRadio, wheel, "Custom");
+
+  document.getElementById(containerId).replaceChildren(...options, custom);
 }
 
-function celebrationDone() {
-  const stillFlying = effects.some((fx) => fx.type === "launch" || fx.type === "fish");
-  return state === "clear" && time === 0 && fishBurstsLeft === 0 && !stillFlying;
+buildEmojiGrid();
+buildSwatches("main-swatches", "main-color", MAIN_COLOR_PRESETS, "Custom main color");
+buildSwatches("accent-swatches", "accent-color", ACCENT_COLOR_PRESETS, "Custom accent color");
+
+let mode = "welcome";
+let steps = [];
+let stepIndex = 0;
+let draft = null;
+let triedToContinue = false;
+
+function openSetup(newMode) {
+  mode = newMode;
+  steps = mode === "welcome" ? ["welcome", "build", "preview"] : ["build", "preview"];
+  skipButton.textContent = mode === "welcome" ? "Skip setup" : "Cancel";
+  fillForm(currentCard);
+  // A new visitor picks their own type instead of starting with mine
+  if (mode === "welcome") {
+    setChoice("type-emoji", "");
+    field("f-type").value = "";
+  }
+  clearAllErrors();
+  triedToContinue = false;
+  dialog.showModal();
+  showStep(0);
 }
 
-function canStart() {
-  return state === "title" || state === "gameover" || celebrationDone();
+function showStep(index) {
+  stepIndex = index;
+  const step = steps[index];
+  for (const section of dialog.querySelectorAll("[data-step]")) {
+    section.hidden = section.dataset.step !== step;
+  }
+
+  const titles = {
+    welcome: "Welcome!",
+    build: mode === "welcome" ? "Build your card" : "Edit your card",
+    preview: "Preview your card",
+  };
+  dialogTitle.textContent = titles[step];
+  stepText.textContent = `Step ${index + 1} of ${steps.length}`;
+  dots.replaceChildren(...steps.map((_, i) => {
+    const dot = document.createElement("span");
+    if (i === index) dot.className = "current";
+    return dot;
+  }));
+
+  backButton.hidden = index === 0;
+  const isLast = index === steps.length - 1;
+  nextButton.textContent = isLast ? (mode === "welcome" ? "Create my card" : "Save changes") : "Next →";
+
+  dialogBody.scrollTop = 0;
+  // Moving focus to the title makes screen readers announce the new step
+  dialogTitle.focus();
 }
 
-// ---------- Tiles and collisions ----------
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const step = steps[stepIndex];
 
-function tileAt(col, row) {
-  if (col < 0 || col >= COLS) return "S";
-  if (row < 0 || row >= ROWS) return " ";
-  return level[row][col];
-}
-
-function isSolid(col, row) {
-  return tileAt(col, row) !== " ";
-}
-
-// Move sideways, then push back out of any wall we ran into
-function moveX(thing) {
-  thing.x += thing.vx;
-  const top = Math.floor(thing.y / TILE);
-  const bottom = Math.floor((thing.y + thing.h - 0.001) / TILE);
-  if (thing.vx > 0) {
-    const col = Math.floor((thing.x + thing.w - 0.001) / TILE);
-    for (let row = top; row <= bottom; row++) {
-      if (isSolid(col, row)) { thing.x = col * TILE - thing.w; thing.vx = 0; return; }
+  if (step === "build") {
+    triedToContinue = true;
+    const errors = validateAll();
+    if (errors.length > 0) {
+      showErrors(errors);
+      return;
     }
-  } else if (thing.vx < 0) {
-    const col = Math.floor(thing.x / TILE);
-    for (let row = top; row <= bottom; row++) {
-      if (isSolid(col, row)) { thing.x = (col + 1) * TILE; thing.vx = 0; return; }
-    }
+    clearAllErrors();
+    draft = readForm();
+    renderPreview(draft);
+  }
+
+  if (stepIndex === steps.length - 1) {
+    saveDraft();
+  } else {
+    showStep(stepIndex + 1);
+  }
+});
+
+backButton.addEventListener("click", () => showStep(stepIndex - 1));
+skipButton.addEventListener("click", () => dialog.close());
+closeButton.addEventListener("click", () => dialog.close());
+
+// Escape, ×, Skip, and saving all close the popup; after any of them it won't pop up by itself again
+dialog.addEventListener("close", () => {
+  writeStorage(WELCOME_SEEN_KEY, "1");
+});
+
+document.getElementById("edit-card-button").addEventListener("click", () => openSetup("edit"));
+
+document.getElementById("reset-card-button").addEventListener("click", () => {
+  fillForm(DEFAULT_CARD);
+  clearAllErrors();
+  triedToContinue = false;
+  document.getElementById("f-major").focus();
+});
+
+function saveDraft() {
+  currentCard = draft;
+  const saved = saveCard(currentCard);
+  renderCard(cardFront, currentCard);
+  applyCardLook(currentCard);
+  setFlipped(false);
+  dialog.close();
+  cardStatus.textContent = saved
+    ? "Your card was saved."
+    : "Your card was updated, but this browser can't save it for next time.";
+}
+
+function renderPreview(data) {
+  const copy = cardFront.cloneNode(true);
+  copy.removeAttribute("aria-hidden");
+  renderCard(copy, data);
+  preview.replaceChildren(copy);
+  applyCardLook(data, preview);
+
+  const rows = [
+    ["Major", data.major],
+    ...data.stats.map((s) => [s.name, `${s.value} out of 99`]),
+    ["Special ability", `${data.abilityName}: ${data.abilityDescription}`],
+    ["Card type", `${data.typeEmoji} ${data.typeName}`],
+    ["Main color", colorName(data.mainColor, MAIN_COLOR_PRESETS)],
+    ["Accent color", colorName(data.accentColor, ACCENT_COLOR_PRESETS)],
+  ];
+  previewSummary.replaceChildren(...rows.flatMap(([term, detail]) => {
+    const dt = document.createElement("dt");
+    dt.textContent = term;
+    const dd = document.createElement("dd");
+    dd.textContent = detail;
+    return [dt, dd];
+  }));
+}
+
+// ---------- Reading and filling the form ----------
+
+function field(id) {
+  return document.getElementById(id);
+}
+
+function fillForm(data) {
+  field("f-major").value = data.major;
+  data.stats.forEach((stat, i) => {
+    field(`f-stat${i + 1}-name`).value = stat.name;
+    field(`f-stat${i + 1}-value`).value = String(stat.value);
+  });
+  field("f-ability-name").value = data.abilityName;
+  descriptionInput.value = data.abilityDescription;
+  setChoice("type-emoji", data.typeEmoji);
+  field("f-type").value = data.typeName;
+  setColorChoice("main-color", data.mainColor);
+  setColorChoice("accent-color", data.accentColor);
+  updateCharacterCount(false);
+}
+
+function setChoice(name, value) {
+  for (const radio of form.querySelectorAll(`input[name="${name}"]`)) {
+    radio.checked = radio.value === value;
   }
 }
 
-// Move up/down, then land on the floor or bonk on a ceiling.
-// Returns the blocks that were hit from below, if any.
-function moveY(thing) {
-  thing.y += thing.vy;
-  thing.onGround = false;
-  const left = Math.floor(thing.x / TILE);
-  const right = Math.floor((thing.x + thing.w - 0.001) / TILE);
-  if (thing.vy > 0) {
-    const row = Math.floor((thing.y + thing.h - 0.001) / TILE);
-    for (let col = left; col <= right; col++) {
-      if (isSolid(col, row)) {
-        thing.y = row * TILE - thing.h;
-        thing.vy = 0;
-        thing.onGround = true;
-        return null;
+// Checks the matching preset, or "Custom" with the color wheel set to that color
+function setColorChoice(name, hex) {
+  const radios = [...form.querySelectorAll(`input[name="${name}"]`)];
+  const preset = radios.find((radio) => radio.value.toLowerCase() === hex.toLowerCase());
+  setChoice(name, preset ? preset.value : "custom");
+  field(`${name}-custom`).value = hex;
+}
+
+function checkedValue(name) {
+  const checked = form.querySelector(`input[name="${name}"]:checked`);
+  return checked ? checked.value : "";
+}
+
+function readColor(name) {
+  const value = checkedValue(name);
+  return value === "custom" ? field(`${name}-custom`).value : value;
+}
+
+function colorName(hex, presets) {
+  const preset = presets.find((p) => p.value.toLowerCase() === hex.toLowerCase());
+  return preset ? preset.name : `Custom (${hex})`;
+}
+
+function readForm() {
+  return {
+    major: field("f-major").value.trim(),
+    stats: [1, 2, 3].map((n) => ({
+      name: field(`f-stat${n}-name`).value.trim(),
+      value: Number(field(`f-stat${n}-value`).value),
+    })),
+    abilityName: field("f-ability-name").value.trim(),
+    abilityDescription: descriptionInput.value.trim(),
+    typeEmoji: checkedValue("type-emoji"),
+    typeName: field("f-type").value.trim(),
+    mainColor: readColor("main-color"),
+    accentColor: readColor("accent-color"),
+  };
+}
+
+// ---------- Checking the form ----------
+
+// Counts emoji as one character each, the way people see them
+function lengthOf(text) {
+  return Array.from(text).length;
+}
+
+function plural(count, word) {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}
+
+function statLabel(n) {
+  return field(`f-stat${n}-name`).value.trim() || `Attribute ${n}`;
+}
+
+// Returns the error message for one field, or null if it's fine
+function checkField(id) {
+  if (id === "f-major") {
+    const value = field(id).value.trim();
+    if (!value) return "Please enter your major.";
+    if (lengthOf(value) > LIMITS.major) return 'Major can be up to 40 characters. Try an abbreviation, like "CSEN".';
+    return null;
+  }
+
+  const statName = id.match(/^f-stat(\d)-name$/);
+  if (statName) {
+    const n = Number(statName[1]);
+    const value = field(id).value.trim();
+    if (!value) return `Please give attribute ${n} a name, like "Speed".`;
+    if (lengthOf(value) > LIMITS.statName) return "Attribute names can be up to 12 characters.";
+    for (let earlier = 1; earlier < n; earlier++) {
+      if (field(`f-stat${earlier}-name`).value.trim().toLowerCase() === value.toLowerCase()) {
+        return `Each attribute needs a different name. "${value}" is used twice.`;
       }
     }
-  } else if (thing.vy < 0) {
-    const row = Math.floor(thing.y / TILE);
-    const hitCols = [];
-    for (let col = left; col <= right; col++) {
-      if (isSolid(col, row)) hitCols.push(col);
-    }
-    if (hitCols.length > 0) {
-      thing.y = (row + 1) * TILE;
-      thing.vy = 0;
-      return { row, cols: hitCols };
-    }
+    return null;
   }
+
+  const statValue = id.match(/^f-stat(\d)-value$/);
+  if (statValue) {
+    const input = field(id);
+    const label = statLabel(Number(statValue[1]));
+    const raw = input.value.trim();
+    if (input.validity.badInput) return `${label} needs a number from 0 to 99.`;
+    if (raw === "") return `Please give ${label} a rating from 0 to 99.`;
+    const number = Number(raw);
+    if (!Number.isFinite(number)) return `${label} needs a number from 0 to 99.`;
+    if (!Number.isInteger(number)) return `Use a whole number for ${label}, like 86 (no decimals).`;
+    if (number > 99) return `${label} can be at most 99. You entered ${raw}.`;
+    if (number < 0) return `${label} can't be negative. Enter a number from 0 to 99.`;
+    return null;
+  }
+
+  if (id === "f-ability-name") {
+    const value = field(id).value.trim();
+    if (!value) return "Please name your special ability.";
+    if (lengthOf(value) > LIMITS.abilityName) return "Ability names can be up to 30 characters.";
+    return null;
+  }
+
+  if (id === "f-ability-description") {
+    const value = descriptionInput.value.trim();
+    const length = lengthOf(value);
+    if (!value) return "Please describe what your special ability does.";
+    if (length > LIMITS.abilityDescription) {
+      const extra = length - LIMITS.abilityDescription;
+      return `Descriptions can be up to 120 characters. You're at ${length}. Remove ${plural(extra, "character")}.`;
+    }
+    return null;
+  }
+
+  if (id === "f-type-emoji") return checkedValue("type-emoji") ? null : "Please pick an emoji for your card type.";
+
+  if (id === "f-type") {
+    const value = field(id).value.trim();
+    if (!value) return 'Please enter a card type name, like "Fire".';
+    if (lengthOf(value) > LIMITS.type) return "Card type names can be up to 20 characters.";
+    return null;
+  }
+
+  if (id === "f-main-color") return readColor("main-color") ? null : "Please choose a main color.";
+  if (id === "f-accent-color") return readColor("accent-color") ? null : "Please choose an accent color.";
   return null;
 }
 
-function overlaps(a, b) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+function validateAll() {
+  const errors = [];
+  for (const id of FIELD_IDS) {
+    const message = checkField(id);
+    if (message) errors.push({ id, message });
+  }
+  return errors;
 }
 
-// What happens when the cat headbutts a block
-function bumpBlock(hit) {
-  const centerCol = Math.floor((player.x + player.w / 2) / TILE);
-  const col = hit.cols.includes(centerCol) ? centerCol : hit.cols[0];
-  const row = hit.row;
-  const tile = tileAt(col, row);
+// ---------- Showing errors ----------
 
-  if (tile === "?") {
-    level[row][col] = "U";
-    coins++;
-    score += 200;
-    effects.push({ type: "coin", x: col * TILE + 4, y: row * TILE - 8, vy: -4, life: 30 });
-  } else if (tile === "B") {
-    level[row][col] = " ";
-    score += 50;
-    for (let i = 0; i < 4; i++) {
-      effects.push({
-        type: "debris",
-        x: col * TILE + (i % 2) * 8, y: row * TILE + (i < 2 ? 0 : 8),
-        vx: i % 2 ? 1.2 : -1.2, vy: i < 2 ? -5 : -3.5, life: 60,
-      });
-    }
+function isGroup(id) {
+  return id in GROUPS;
+}
+
+// Fields (and groups) are marked invalid on the inputs a screen reader lands on
+function invalidTargets(id) {
+  return isGroup(id) ? [...field(id).querySelectorAll("input")] : [field(id)];
+}
+
+function setFieldError(id, message) {
+  const element = field(id);
+  const errorId = `${id}-error`;
+  let error = document.getElementById(errorId);
+  if (element.dataset.describedby === undefined) {
+    element.dataset.describedby = element.getAttribute("aria-describedby") || "";
+  }
+  const original = element.dataset.describedby;
+
+  if (!message) {
+    if (error) error.remove();
+    invalidTargets(id).forEach((input) => input.removeAttribute("aria-invalid"));
+    if (original) element.setAttribute("aria-describedby", original);
+    else element.removeAttribute("aria-describedby");
+    return;
   }
 
-  // Any mouse standing on that block gets knocked away
-  for (const mouse of mice) {
-    const onTop = Math.abs(mouse.y + mouse.h - row * TILE) < 2;
-    const above = mouse.x + mouse.w > col * TILE && mouse.x < (col + 1) * TILE;
-    if (!mouse.dead && onTop && above) knockAway(mouse);
+  if (!error) {
+    error = document.createElement("p");
+    error.className = "field-error";
+    error.id = errorId;
+    if (isGroup(id)) element.append(error);
+    else if (id === "f-ability-description") descriptionCount.after(error);
+    else element.after(error);
   }
+  const icon = document.createElement("span");
+  icon.setAttribute("aria-hidden", "true");
+  icon.textContent = "⚠ ";
+  error.replaceChildren(icon, message);
+
+  invalidTargets(id).forEach((input) => input.setAttribute("aria-invalid", "true"));
+  element.setAttribute("aria-describedby", `${original} ${errorId}`.trim());
 }
 
-function knockAway(mouse) {
-  mouse.dead = "flip";
-  mouse.vy = -3;
-  score += 100;
-  effects.push({ type: "text", text: "100", x: mouse.x, y: mouse.y - 8, life: 40 });
+function clearAllErrors() {
+  FIELD_IDS.forEach((id) => setFieldError(id, null));
+  errorSummary.hidden = true;
 }
 
-// ---------- Updating each frame ----------
-
-function updatePlayer() {
-  const p = player;
-  const maxSpeed = keys.run ? 2.6 : 1.6;
-  const accel = p.onGround ? 0.12 : 0.08;
-
-  if (keys.left && !keys.right) {
-    p.vx = Math.max(p.vx - accel, -maxSpeed);
-    p.facing = -1;
-  } else if (keys.right && !keys.left) {
-    p.vx = Math.min(p.vx + accel, maxSpeed);
-    p.facing = 1;
-  } else if (p.vx > 0) {
-    p.vx = Math.max(0, p.vx - 0.1);
-  } else {
-    p.vx = Math.min(0, p.vx + 0.1);
-  }
-
-  // Jump only on a fresh press, so holding the key doesn't bunny-hop
-  if (keys.jump && !p.jumpHeld && p.onGround) p.vy = -5.6;
-  p.jumpHeld = keys.jump;
-
-  // Holding jump makes gravity weaker on the way up, for higher jumps
-  const gravity = keys.jump && p.vy < 0 ? 0.18 : 0.38;
-  p.vy = Math.min(p.vy + gravity, 5);
-
-  moveX(p);
-  // Like the original, you can't walk back past the left edge of the screen
-  if (p.x < camX) { p.x = camX; p.vx = Math.max(p.vx, 0); }
-
-  const hit = moveY(p);
-  if (hit) bumpBlock(hit);
-
-  if (p.y > VIEW_H) loseLife(true);
-}
-
-function updateMice() {
-  for (const mouse of mice) {
-    if (!mouse.active) {
-      if (mouse.x < camX + VIEW_W + TILE) mouse.active = true;
-      else continue;
-    }
-    if (mouse.dead === "squash") { mouse.timer--; continue; }
-    if (mouse.dead === "flip") { mouse.vy += 0.3; mouse.y += mouse.vy; continue; }
-
-    const direction = mouse.vx;
-    moveX(mouse);
-    if (mouse.vx === 0) mouse.vx = -direction;  // turn around at walls
-    mouse.vy = Math.min(mouse.vy + 0.3, 4);
-    moveY(mouse);
-  }
-
-  // Mice that bump into each other turn around
-  for (let i = 0; i < mice.length; i++) {
-    for (let j = i + 1; j < mice.length; j++) {
-      const a = mice[i], b = mice[j];
-      if (a.dead || b.dead || !a.active || !b.active || !overlaps(a, b)) continue;
-      a.vx = a.x < b.x ? -0.5 : 0.5;
-      b.vx = -a.vx;
-    }
-  }
-
-  mice = mice.filter((m) => m.y < VIEW_H && !(m.dead === "squash" && m.timer <= 0));
-}
-
-function checkMouseHits() {
-  for (const mouse of mice) {
-    if (mouse.dead || !mouse.active || !overlaps(player, mouse)) continue;
-    const landingOnTop = player.vy > 0 && player.y + player.h - mouse.y < 8;
-    if (landingOnTop) {
-      mouse.dead = "squash";
-      mouse.timer = 30;
-      player.vy = keys.jump ? -5 : -3.5;
-      score += 100;
-      effects.push({ type: "text", text: "100", x: mouse.x, y: mouse.y - 8, life: 40 });
-    } else {
-      loseLife(false);
-      return;
-    }
-  }
-}
-
-function loseLife(fellInPit) {
-  state = "dying";
-  stateTimer = 150;
-  player.vx = 0;
-  player.vy = fellInPit ? 0 : -5;
-}
-
-// A fish burst: a fish shoots up from the castle, then pops into a ring of fish
-function launchFishBurst() {
-  effects.push({
-    type: "launch",
-    x: (201 + Math.random() * 6) * TILE,
-    y: 12 * TILE,
-    vy: -3.5,
-    life: 30 + Math.floor(Math.random() * 15),
-    colors: { o: FISH_COLORS[Math.floor(Math.random() * FISH_COLORS.length)], k: "#111111" },
-  });
-}
-
-function popFishBurst(launch) {
-  effects.push({ type: "flash", x: launch.x, y: launch.y, life: 10 });
-  for (let i = 0; i < 10; i++) {
-    const angle = (i / 10) * Math.PI * 2;
-    effects.push({
-      type: "fish",
-      x: launch.x, y: launch.y,
-      vx: Math.cos(angle) * 1.6, vy: Math.sin(angle) * 1.6,
-      life: 60,
-      colors: launch.colors,
+function fillSummary(errors) {
+  const things = errors.length === 1 ? "is 1 thing" : `are ${errors.length} things`;
+  const goal = mode === "welcome" ? "creating your card" : "saving your card";
+  errorSummaryTitle.textContent = `There ${things} to fix before ${goal}:`;
+  errorSummaryList.replaceChildren(...errors.map(({ id, message }) => {
+    const item = document.createElement("li");
+    const link = document.createElement("a");
+    link.href = `#${id}`;
+    link.textContent = message;
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      focusField(id);
     });
-  }
-  score += 500;
-  effects.push({ type: "text", text: "500", x: launch.x - 6, y: launch.y + 12, life: 40 });
+    item.append(link);
+    return item;
+  }));
 }
 
-function updateEffects() {
-  const popped = [];
-  for (const fx of effects) {
-    fx.life--;
-    if (fx.type === "coin") { fx.y += fx.vy; fx.vy += 0.25; }
-    if (fx.type === "debris") { fx.x += fx.vx; fx.y += fx.vy; fx.vy += 0.3; }
-    if (fx.type === "text") fx.y -= 0.5;
-    if (fx.type === "launch") {
-      fx.y += fx.vy;
-      if (fx.life <= 0) popped.push(fx);
-    }
-    if (fx.type === "fish") {
-      fx.x += fx.vx;
-      fx.y += fx.vy;
-      fx.vx *= 0.98;
-      fx.vy += 0.04;
-    }
-  }
-  effects = effects.filter((fx) => fx.life > 0);
-  popped.forEach(popFishBurst);
-}
-
-function updateCamera() {
-  const target = player.x - 112;
-  camX = Math.max(camX, Math.min(target, COLS * TILE - VIEW_W));
-}
-
-function update() {
-  frame++;
-
-  if (state === "playing") {
-    updatePlayer();
-    if (state !== "playing") return;
-    updateMice();
-    checkMouseHits();
-    if (state !== "playing") return;
-
-    // The game runs 60 frames a second, so this counts down once per second
-    timeTick++;
-    if (timeTick >= 60) {
-      timeTick = 0;
-      time--;
-      if (time <= 0) { loseLife(false); return; }
-    }
-
-    // Touched the flagpole: the cat has to actually overlap the pole,
-    // from the ball on top down to the block at the bottom
-    const pole = { x: FLAG_COL * TILE + 7, y: 2 * TILE + 3, w: 2, h: 10 * TILE - 3 };
-    if (overlaps(player, pole)) {
-      state = "flag";
-      player.x = FLAG_COL * TILE + 8 - player.w;
-      player.vx = 0;
-      player.vy = 0;
-      const bonus = player.y < 5 * TILE ? 5000 : player.y < 8 * TILE ? 2000 : player.y < 10 * TILE ? 800 : 400;
-      score += bonus;
-      effects.push({ type: "text", text: String(bonus), x: player.x + 16, y: player.y, life: 60 });
-
-      // Secret: if the timer's last two digits match (like 255 or 11),
-      // that many fish bursts go off over the castle
-      const ones = time % 10;
-      const tens = Math.floor(time / 10) % 10;
-      if (time >= 10 && ones === tens) fishBurstsLeft = ones;
-    }
-  } else if (state === "dying") {
-    player.vy += 0.25;
-    player.y += player.vy;
-    stateTimer--;
-    if (stateTimer <= 0) {
-      lives--;
-      if (lives <= 0) {
-        state = "gameover";
-      } else {
-        resetLevel();
-        state = "playing";
-      }
-    }
-  } else if (state === "flag") {
-    // Slide down the pole
-    player.y = Math.min(player.y + 2, 12 * TILE - player.h);
-    flagY = Math.min(flagY + 2, 11 * TILE);
-    if (player.y >= 12 * TILE - player.h && flagY >= 11 * TILE) state = "walk";
-  } else if (state === "walk") {
-    // Walk into the castle on its own
-    player.facing = 1;
-    player.vx = 1.2;
-    player.vy = Math.min(player.vy + 0.38, 5);
-    moveX(player);
-    moveY(player);
-    if (player.x >= CASTLE_DOOR_X) state = "clear";
-  } else if (state === "clear") {
-    // Leftover time turns into points
-    if (time > 0) {
-      time--;
-      score += 50;
-    } else if (fishBurstsLeft > 0) {
-      fishBurstTimer--;
-      if (fishBurstTimer <= 0) {
-        launchFishBurst();
-        fishBurstsLeft--;
-        fishBurstTimer = 40;
-      }
-    }
-  }
-
-  updateEffects();
-  if (state === "playing" || state === "flag" || state === "walk") updateCamera();
-}
-
-// ---------- Drawing ----------
-
-function drawText(text, x, y, size, align) {
-  ctx.font = `bold ${size}px monospace`;
-  ctx.textAlign = align;
-  ctx.textBaseline = "top";
-  ctx.fillStyle = "#000";
-  ctx.fillText(text, x + 1, y + 1);
-  ctx.fillStyle = "#fff";
-  ctx.fillText(text, x, y);
-}
-
-function drawBumps(x, y, sizes, color) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  sizes.forEach((r, i) => {
-    const cx = x + i * 12;
-    ctx.moveTo(cx + r, y);
-    ctx.arc(cx, y, r, Math.PI, 0);
+function showErrors(errors) {
+  FIELD_IDS.forEach((id) => {
+    const found = errors.find((e) => e.id === id);
+    setFieldError(id, found ? found.message : null);
   });
-  ctx.fill();
+  fillSummary(errors);
+  errorSummary.hidden = false;
+  // The summary sits at the top of the scrolling area; scrollIntoView would also shift the popup itself
+  dialogBody.scrollTop = 0;
+  errorSummary.focus({ preventScroll: true });
 }
 
-function drawScenery() {
-  const groundY = 13 * TILE;
-  // Hills
-  ctx.fillStyle = "#00a800";
-  for (const col of [0, 48, 96, 144, 192]) {
-    ctx.beginPath();
-    ctx.ellipse(col * TILE + 40, groundY, 40, 35, 0, Math.PI, 0);
-    ctx.fill();
-  }
-  for (const col of [16, 64, 112, 160]) {
-    ctx.beginPath();
-    ctx.ellipse(col * TILE + 24, groundY, 24, 19, 0, Math.PI, 0);
-    ctx.fill();
-  }
-  // Bushes
-  for (const col of [11, 23, 41, 59, 71, 89, 107, 119, 137, 157, 167, 205]) {
-    drawBumps(col * TILE, groundY, [8, 10, 8], "#80d010");
-  }
-  // Clouds
-  for (const col of [8, 19, 27, 36, 56, 67, 75, 84, 104, 115, 123, 132, 152, 163, 171, 180, 200]) {
-    const y = (col % 3 === 0 ? 2 : 3) * TILE;
-    drawBumps(col * TILE, y + 10, [8, 11, 8], "#ffffff");
-    ctx.fillRect(col * TILE - 8, y + 10, 40, 6);
+function focusField(id) {
+  const target = isGroup(id)
+    ? field(id).querySelector("input:checked") || field(id).querySelector("input")
+    : field(id);
+  target.focus();
+}
+
+// Re-check a field when you leave it, and clear its error as soon as it's fixed
+function refreshField(id) {
+  setFieldError(id, checkField(id));
+  if (!errorSummary.hidden) {
+    const errors = validateAll();
+    if (errors.length === 0) errorSummary.hidden = true;
+    else fillSummary(errors);
   }
 }
 
-function drawBrick(x, y) {
-  ctx.fillStyle = "#c84c0c";
-  ctx.fillRect(x, y, 16, 16);
-  ctx.fillStyle = "#fcbcb0";
-  ctx.fillRect(x, y, 16, 1);
-  ctx.fillStyle = "#000";
-  ctx.fillRect(x, y + 7, 16, 1);
-  ctx.fillRect(x, y + 15, 16, 1);
-  ctx.fillRect(x + 7, y, 1, 7);
-  ctx.fillRect(x + 3, y + 8, 1, 7);
-  ctx.fillRect(x + 11, y + 8, 1, 7);
+function fieldIdFor(element) {
+  const group = Object.keys(GROUPS).find((id) => GROUPS[id] === element.name);
+  if (group) return group;
+  return FIELD_IDS.includes(element.id) ? element.id : null;
 }
 
-function drawBevelBlock(x, y, color, light, dark) {
-  ctx.fillStyle = dark;
-  ctx.fillRect(x, y, 16, 16);
-  ctx.fillStyle = light;
-  ctx.fillRect(x, y, 15, 15);
-  ctx.fillStyle = color;
-  ctx.fillRect(x + 1, y + 1, 14, 14);
-}
-
-function drawTile(tile, x, y) {
-  switch (tile) {
-    case "G":
-      drawBevelBlock(x, y, "#c84c0c", "#fcbcb0", "#000");
-      ctx.fillStyle = "#000";
-      ctx.fillRect(x + 8, y + 1, 1, 7);
-      ctx.fillRect(x + 1, y + 8, 7, 1);
-      break;
-    case "B":
-      drawBrick(x, y);
-      break;
-    case "S":
-      drawBevelBlock(x, y, "#c84c0c", "#fcbcb0", "#000");
-      break;
-    case "?": {
-      const shine = Math.floor(frame / 20) % 3 === 0 ? "#fcd860" : "#f8b800";
-      drawBevelBlock(x, y, shine, "#fce0a8", "#c84c0c");
-      ctx.fillStyle = "#c84c0c";
-      ctx.fillRect(x + 5, y + 3, 6, 2);
-      ctx.fillRect(x + 10, y + 5, 2, 3);
-      ctx.fillRect(x + 7, y + 8, 3, 2);
-      ctx.fillRect(x + 7, y + 11, 2, 2);
-      break;
-    }
-    case "U":
-      drawBevelBlock(x, y, "#a0522d", "#c88a5a", "#000");
-      break;
-    case "T":
-      ctx.fillStyle = "#004a00"; ctx.fillRect(x, y, 16, 16);
-      ctx.fillStyle = "#00a800"; ctx.fillRect(x + 1, y + 1, 15, 14);
-      ctx.fillStyle = "#80d010"; ctx.fillRect(x + 3, y + 1, 3, 14);
-      break;
-    case "Y":
-      ctx.fillStyle = "#004a00"; ctx.fillRect(x, y, 16, 16);
-      ctx.fillStyle = "#00a800"; ctx.fillRect(x, y + 1, 15, 14);
-      ctx.fillStyle = "#006800"; ctx.fillRect(x + 9, y + 1, 4, 14);
-      break;
-    case "p":
-      ctx.fillStyle = "#004a00"; ctx.fillRect(x + 2, y, 14, 16);
-      ctx.fillStyle = "#00a800"; ctx.fillRect(x + 3, y, 13, 16);
-      ctx.fillStyle = "#80d010"; ctx.fillRect(x + 5, y, 3, 16);
-      break;
-    case "q":
-      ctx.fillStyle = "#004a00"; ctx.fillRect(x, y, 14, 16);
-      ctx.fillStyle = "#00a800"; ctx.fillRect(x, y, 13, 16);
-      ctx.fillStyle = "#006800"; ctx.fillRect(x + 7, y, 4, 16);
-      break;
-  }
-}
-
-function drawTiles() {
-  const firstCol = Math.floor(camX / TILE);
-  for (let row = 0; row < ROWS; row++) {
-    for (let col = firstCol; col <= firstCol + VIEW_W / TILE + 1; col++) {
-      const tile = tileAt(col, row);
-      if (tile !== " ") drawTile(tile, col * TILE, row * TILE);
-    }
-  }
-}
-
-function drawFlagAndCastle() {
-  const poleX = FLAG_COL * TILE + 7;
-  ctx.fillStyle = "#80d010";
-  ctx.fillRect(poleX, 2 * TILE + 8, 2, 10 * TILE - 8);
-  ctx.fillStyle = "#00a800";
-  ctx.beginPath();
-  ctx.arc(poleX + 1, 2 * TILE + 6, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // White flag with a green paw dot
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.moveTo(poleX, flagY);
-  ctx.lineTo(poleX - 15, flagY + 7);
-  ctx.lineTo(poleX, flagY + 14);
-  ctx.fill();
-  ctx.fillStyle = "#2b8a3e";
-  ctx.beginPath();
-  ctx.arc(poleX - 5, flagY + 7, 2.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Castle made of bricks
-  for (let col = 202; col <= 206; col++) {
-    for (let row = 10; row <= 12; row++) drawBrick(col * TILE, row * TILE);
-  }
-  for (let col = 203; col <= 205; col++) {
-    for (let row = 8; row <= 9; row++) drawBrick(col * TILE, row * TILE);
-  }
-  // Battlements: the bumpy tops of the walls
-  const battlements = [[202, 9], [206, 9], [203, 7], [204, 7], [205, 7]];
-  for (const [col, row] of battlements) {
-    drawBrick(col * TILE, row * TILE + 8);
-    ctx.fillStyle = "#5c94fc";
-    ctx.fillRect(col * TILE + 4, row * TILE + 8, 8, 8);
-  }
-
-  ctx.fillStyle = "#000";
-  ctx.fillRect(204 * TILE + 2, 11 * TILE + 4, 12, 28);
-  ctx.beginPath();
-  ctx.arc(204 * TILE + 8, 11 * TILE + 4, 6, Math.PI, 0);
-  ctx.fill();
-  ctx.fillRect(203 * TILE + 6, 8 * TILE + 4, 4, 8);
-  ctx.fillRect(205 * TILE + 6, 8 * TILE + 4, 4, 8);
-}
-
-function drawEffects() {
-  for (const fx of effects) {
-    if (fx.type === "coin") {
-      ctx.fillStyle = "#f8b800";
-      ctx.beginPath();
-      ctx.ellipse(fx.x + 4, fx.y + 7, 4, 7, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#fcd860";
-      ctx.fillRect(fx.x + 3, fx.y + 3, 2, 8);
-    } else if (fx.type === "debris") {
-      ctx.fillStyle = "#c84c0c";
-      ctx.fillRect(fx.x, fx.y, 5, 5);
-    } else if (fx.type === "text") {
-      drawText(fx.text, fx.x, fx.y, 7, "left");
-    } else if (fx.type === "launch") {
-      drawSprite(FISH, fx.colors, fx.x - 4, fx.y, false, false);
-    } else if (fx.type === "flash") {
-      ctx.fillStyle = `rgba(255, 255, 255, ${fx.life / 10})`;
-      ctx.beginPath();
-      ctx.arc(fx.x, fx.y, (10 - fx.life) * 2 + 4, 0, Math.PI * 2);
-      ctx.fill();
-    } else if (fx.type === "fish") {
-      ctx.globalAlpha = Math.min(1, fx.life / 20);
-      drawSprite(FISH, fx.colors, fx.x - 4, fx.y - 2, fx.vx > 0, false);
-      ctx.globalAlpha = 1;
-    }
-  }
-}
-
-function drawMice() {
-  for (const mouse of mice) {
-    if (mouse.x > camX + VIEW_W || mouse.x + 16 < camX) continue;
-    if (mouse.dead === "squash") {
-      ctx.fillStyle = "#9e9e9e";
-      ctx.fillRect(mouse.x, mouse.y + mouse.h - 4, mouse.w, 4);
-      ctx.fillStyle = "#5f5f5f";
-      ctx.fillRect(mouse.x, mouse.y + mouse.h - 1, mouse.w, 1);
-      continue;
-    }
-    const sprite = Math.floor(frame / 10) % 2 === 0 ? MOUSE_STEP_1 : MOUSE_STEP_2;
-    drawSprite(sprite, MOUSE_COLORS, mouse.x - 1, mouse.y - 6, mouse.vx > 0, mouse.dead === "flip");
-  }
-}
-
-function drawPlayer() {
-  const p = player;
-  let sprite = CAT_STEP_1;
-  if (state === "playing" && !p.onGround) {
-    sprite = CAT_JUMP;
-  } else if (Math.abs(p.vx) > 0.1) {
-    const speed = keys.run ? 5 : 8;
-    sprite = Math.floor(frame / speed) % 2 === 0 ? CAT_STEP_1 : CAT_STEP_2;
-  }
-  drawSprite(sprite, CAT_COLORS, p.x - 2, p.y - 2, p.facing < 0, state === "dying");
-}
-
-function drawHud() {
-  drawText("SCORE", 8, 6, 8, "left");
-  drawText(String(score).padStart(6, "0"), 8, 15, 8, "left");
-  drawText("COINS", 64, 6, 8, "left");
-  drawText("x" + String(coins).padStart(2, "0"), 64, 15, 8, "left");
-  drawText("WORLD", 116, 6, 8, "left");
-  drawText("1-1", 116, 15, 8, "left");
-  drawText("TIME", 168, 6, 8, "left");
-  drawText(String(time), 168, 15, 8, "left");
-  drawText("LIVES", 214, 6, 8, "left");
-  drawText(String(lives), 214, 15, 8, "left");
-}
-
-function drawMessage(title, subtitle) {
-  ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
-  ctx.fillRect(0, 80, VIEW_W, 70);
-  drawText(title, VIEW_W / 2, 92, 16, "center");
-  if (subtitle) drawText(subtitle, VIEW_W / 2, 120, 8, "center");
-}
-
-function draw() {
-  ctx.fillStyle = "#5c94fc";
-  ctx.fillRect(0, 0, VIEW_W, VIEW_H);
-
-  // Everything in the level scrolls with the camera
-  ctx.save();
-  ctx.translate(-Math.round(camX), 0);
-  drawScenery();
-  drawTiles();
-  drawFlagAndCastle();
-  drawMice();
-  if (state !== "clear") drawPlayer();
-  ctx.restore();
-
-  drawHud();
-  if (state === "title") drawMessage("CAT WORLD 1-1", "Click here or press Enter to start");
-  if (state === "gameover") drawMessage("GAME OVER", "Press Enter to try again");
-  if (state === "clear") drawMessage("COURSE CLEAR!", celebrationDone() ? "Press Enter to play again" : "");
-
-  // Effects go on top of the messages so the fish bursts aren't hidden
-  ctx.save();
-  ctx.translate(-Math.round(camX), 0);
-  drawEffects();
-  ctx.restore();
-}
-
-// ---------- Controls ----------
-
-const KEY_ACTIONS = {
-  ArrowLeft: "left", KeyA: "left",
-  ArrowRight: "right", KeyD: "right",
-  ArrowUp: "jump", KeyW: "jump", Space: "jump", KeyZ: "jump",
-  ShiftLeft: "run", ShiftRight: "run", KeyX: "run",
-};
-
-canvas.addEventListener("keydown", (event) => {
-  const action = KEY_ACTIONS[event.code];
-  if (action) {
-    keys[action] = true;
-    event.preventDefault();  // stop arrow keys and Space from scrolling the page
-  }
-  if ((event.code === "Enter" || event.code === "Space") && canStart()) {
-    event.preventDefault();
-    newGame();
-  }
+form.addEventListener("focusout", (event) => {
+  const id = fieldIdFor(event.target);
+  if (!id || isGroup(id)) return;
+  // Don't complain about empty fields someone is just tabbing past, until they press Next
+  if (triedToContinue || event.target.value.trim() !== "") refreshField(id);
 });
 
-canvas.addEventListener("keyup", (event) => {
-  const action = KEY_ACTIONS[event.code];
-  if (action) keys[action] = false;
+form.addEventListener("input", (event) => {
+  const id = fieldIdFor(event.target);
+  if (!id) return;
+  if (id === "f-ability-description") updateCharacterCount(true);
+  if (document.getElementById(`${id}-error`) && !checkField(id)) refreshField(id);
 });
 
-// Let go of every key if the player clicks somewhere else
-canvas.addEventListener("blur", () => {
-  for (const action in keys) keys[action] = false;
+form.addEventListener("change", (event) => {
+  const id = fieldIdFor(event.target);
+  if (id && isGroup(id) && triedToContinue) refreshField(id);
 });
 
-canvas.addEventListener("click", () => {
-  canvas.focus();
-  if (canStart()) newGame();
-});
+// ---------- Character counter ----------
 
-document.querySelectorAll(".touch-controls button").forEach((button) => {
-  const action = button.dataset.key;
-  button.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
-    keys[action] = true;
-    if (canStart()) newGame();
-  });
-  for (const type of ["pointerup", "pointerleave", "pointercancel"]) {
-    button.addEventListener(type, () => { keys[action] = false; });
+let countLevel = "ok";
+
+function updateCharacterCount(announceChanges) {
+  const length = lengthOf(descriptionInput.value.trim());
+  const limit = LIMITS.abilityDescription;
+  const level = length > limit ? "over" : length >= limit - 10 ? "near" : "ok";
+
+  descriptionCount.textContent = level === "over"
+    ? `${length} / ${limit} characters, ${length - limit} too many`
+    : `${length} / ${limit} characters`;
+  descriptionCount.classList.toggle("near-limit", level === "near");
+  descriptionCount.classList.toggle("over-limit", level === "over");
+
+  // Screen readers hear only when you get close, go over, or come back under
+  if (announceChanges && level !== countLevel) {
+    if (level === "near") descriptionLive.textContent = `${plural(limit - length, "character")} left.`;
+    if (level === "over") descriptionLive.textContent = `Over the limit by ${plural(length - limit, "character")}.`;
+    if (level === "ok" && countLevel === "over") descriptionLive.textContent = "Back under the limit.";
   }
-});
-
-// ---------- Game loop ----------
-// Runs update() 60 times a second no matter how fast the screen refreshes
-
-const STEP = 1000 / 60;
-let lastTime = 0;
-let leftover = 0;
-
-function loop(now) {
-  leftover += Math.min(now - lastTime, 100);
-  lastTime = now;
-  while (leftover >= STEP) {
-    update();
-    leftover -= STEP;
-  }
-  draw();
-  requestAnimationFrame(loop);
+  countLevel = level;
 }
 
-resetLevel();
-requestAnimationFrame((now) => {
-  lastTime = now;
-  loop(now);
-});
+// ---------- First visit ----------
+
+if (!readStorage(WELCOME_SEEN_KEY)) openSetup("welcome");

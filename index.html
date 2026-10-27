@@ -3,19 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>My Trading Card</title>
-  <link rel="stylesheet" href="style.css">
+  <title>My Card · Ismael's Trading Card</title>
+  <!-- Bump ?v= after editing a shared file so browsers don't keep an old copy -->
+  <link rel="stylesheet" href="style.css?v=6">
+  <script src="site.js?v=6"></script>
 </head>
 <body>
-  <main class="page">
-    <div class="card" id="card" role="button" tabindex="0" aria-label="Trading card, click to flip">
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="index.html" aria-current="page">My Card</a></li>
+        <li><a href="pages/game.html">Play the Game</a></li>
+        <li><a href="pages/controls.html">Controls</a></li>
+        <li><a href="pages/faq.html">FAQ</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" class="page">
+    <div class="card" id="card">
       <div class="card-inner">
 
         <!-- Front of the card -->
-        <article class="card-face card-front">
+        <article class="card-face card-front" aria-label="Front of the card">
           <header class="card-header">
             <h1 class="card-name">Ismael</h1>
-            <span class="card-type">Grass</span>
+            <span class="card-type">🌿 Grass</span>
           </header>
 
           <div class="card-art">
@@ -28,7 +43,7 @@
           </div>
 
           <section class="card-body">
-            <p class="card-major"><strong>Major:</strong> CSEN</p>
+            <p class="card-major"><strong>Major:</strong> <span class="card-major-value">CSEN</span></p>
 
             <ul class="card-stats">
               <li>
@@ -49,8 +64,8 @@
             </ul>
 
             <div class="card-ability">
-              <h2>Special Ability: Hardstuck Gold</h2>
-              <p>Pops off on pistol round, then ghosts the rest of the game.</p>
+              <h2 class="card-ability-name">Special Ability: Hardstuck Gold</h2>
+              <p class="card-ability-description">Pops off on pistol round, then ghosts the rest of the game.</p>
             </div>
           </section>
 
@@ -60,29 +75,168 @@
         </article>
 
         <!-- Back of the card -->
-        <article class="card-face card-back">
+        <article class="card-face card-back" aria-label="Back of the card" aria-hidden="true">
           <h2>Fun Fact</h2>
           <p class="fun-fact">I built my own computer and keyboard.</p>
-          <p class="flip-hint">Click to flip back</p>
+          <p class="flip-hint">Click the card to flip back</p>
         </article>
 
       </div>
     </div>
 
-    <!-- Mini-game -->
-    <section class="game" aria-labelledby="game-title">
-      <h2 id="game-title">Cat World 1-1</h2>
-      <canvas id="game" width="512" height="480" tabindex="0"
-              aria-label="Platformer game. Arrow keys to move, Space to jump, Shift to run."></canvas>
-      <p class="game-help">← → move · Space / ↑ jump · Shift run · Enter start</p>
-      <div class="touch-controls">
-        <button type="button" data-key="left" aria-label="Move left">◀</button>
-        <button type="button" data-key="jump" aria-label="Jump">⤒</button>
-        <button type="button" data-key="right" aria-label="Move right">▶</button>
-      </div>
-    </section>
+    <div class="card-actions">
+      <button type="button" class="btn btn-secondary" id="flip-button">↻ Show fun fact</button>
+      <button type="button" class="btn btn-secondary" id="edit-card-button">✏️ Edit my card</button>
+      <a class="btn btn-primary" href="pages/game.html">Play Cat World 1-1 →</a>
+    </div>
+
+    <p class="sr-only" role="status" id="card-status"></p>
   </main>
 
-  <script src="script.js"></script>
+  <footer class="site-footer">
+    <p>Built by Ismael with an AI agent ·
+      <a href="https://github.com/Ismael7y/Lab3-AI-trading-card/blob/main/docs/ai-usage.md">How AI was used</a>
+    </p>
+  </footer>
+
+  <!-- Welcome / setup popup -->
+  <dialog class="setup-dialog" id="setup-dialog" aria-labelledby="setup-title">
+    <form class="setup-form" id="setup-form" novalidate>
+      <div class="dialog-header">
+        <h2 id="setup-title" tabindex="-1">Welcome!</h2>
+        <button type="button" class="dialog-close" id="setup-close" aria-label="Close">×</button>
+      </div>
+
+      <div class="dialog-progress">
+        <span id="setup-step-text">Step 1 of 3</span>
+        <span class="progress-dots" id="setup-dots" aria-hidden="true"></span>
+      </div>
+
+      <div class="dialog-body">
+
+        <!-- Step: welcome -->
+        <section data-step="welcome">
+          <p class="welcome-lead">
+            This is a digital trading card, plus a mini-game you can play. Let's build
+            your card. It takes about a minute.
+          </p>
+          <p>
+            You'll pick a major, three attributes with ratings from 0 to 99, a special
+            ability, a card type, and your card's colors. Your card is saved only in this browser.
+          </p>
+          <p>
+            Need help first? Read the <a href="pages/controls.html">game controls</a> or the
+            <a href="pages/faq.html">FAQ</a>.
+          </p>
+        </section>
+
+        <!-- Step: build your card -->
+        <section data-step="build" hidden>
+          <div class="error-summary" id="error-summary" tabindex="-1" role="alert" hidden>
+            <h3 id="error-summary-title"></h3>
+            <ul id="error-summary-list"></ul>
+          </div>
+
+          <div class="field">
+            <label for="f-major">Major</label>
+            <p class="hint" id="f-major-hint">Up to 40 characters, like "CSEN"</p>
+            <input type="text" id="f-major" name="major" autocomplete="off" aria-describedby="f-major-hint">
+          </div>
+
+          <fieldset class="field" aria-describedby="f-stats-hint">
+            <legend>Attributes</legend>
+            <p class="hint" id="f-stats-hint">Name each one (up to 12 characters) and rate it from 0 to 99.</p>
+            <div class="stat-row">
+              <div>
+                <label for="f-stat1-name">Attribute 1 name</label>
+                <input type="text" id="f-stat1-name" autocomplete="off">
+              </div>
+              <div>
+                <label for="f-stat1-value">Rating</label>
+                <input type="number" id="f-stat1-value" inputmode="numeric" min="0" max="99" step="1" aria-label="Attribute 1 rating">
+              </div>
+            </div>
+            <div class="stat-row">
+              <div>
+                <label for="f-stat2-name">Attribute 2 name</label>
+                <input type="text" id="f-stat2-name" autocomplete="off">
+              </div>
+              <div>
+                <label for="f-stat2-value">Rating</label>
+                <input type="number" id="f-stat2-value" inputmode="numeric" min="0" max="99" step="1" aria-label="Attribute 2 rating">
+              </div>
+            </div>
+            <div class="stat-row">
+              <div>
+                <label for="f-stat3-name">Attribute 3 name</label>
+                <input type="text" id="f-stat3-name" autocomplete="off">
+              </div>
+              <div>
+                <label for="f-stat3-value">Rating</label>
+                <input type="number" id="f-stat3-value" inputmode="numeric" min="0" max="99" step="1" aria-label="Attribute 3 rating">
+              </div>
+            </div>
+          </fieldset>
+
+          <div class="field">
+            <label for="f-ability-name">Special ability name</label>
+            <p class="hint" id="f-ability-name-hint">Up to 30 characters</p>
+            <input type="text" id="f-ability-name" autocomplete="off" aria-describedby="f-ability-name-hint">
+          </div>
+
+          <div class="field">
+            <label for="f-ability-description">What does it do?</label>
+            <p class="hint" id="f-ability-description-hint">One funny sentence, up to 120 characters</p>
+            <textarea id="f-ability-description" rows="3" aria-describedby="f-ability-description-hint"></textarea>
+            <p class="char-count" id="f-ability-description-count" aria-hidden="true">0 / 120 characters</p>
+            <p class="sr-only" id="f-ability-description-live" aria-live="polite"></p>
+          </div>
+
+          <fieldset class="field" id="f-type-emoji">
+            <legend>Card type emoji</legend>
+            <div class="emoji-grid" id="emoji-grid"></div>
+          </fieldset>
+
+          <div class="field">
+            <label for="f-type">Card type name</label>
+            <p class="hint" id="f-type-hint">Up to 20 characters</p>
+            <input type="text" id="f-type" autocomplete="off" placeholder="Fire" aria-describedby="f-type-hint">
+          </div>
+
+          <fieldset class="field" id="f-main-color" aria-describedby="f-colors-hint">
+            <legend>Main color</legend>
+            <p class="hint" id="f-colors-hint">
+              Pick a preset or choose any color with Custom. Text colors adjust so the card stays easy to read.
+            </p>
+            <div class="swatch-grid" id="main-swatches"></div>
+          </fieldset>
+
+          <fieldset class="field" id="f-accent-color">
+            <legend>Accent color</legend>
+            <div class="swatch-grid" id="accent-swatches"></div>
+          </fieldset>
+
+          <button type="button" class="btn btn-link" id="reset-card-button">Start over from the default card</button>
+        </section>
+
+        <!-- Step: preview -->
+        <section data-step="preview" hidden>
+          <p>Here's your card. Go back to change anything, or save it.</p>
+          <div class="card-preview" id="card-preview" aria-hidden="true"></div>
+          <dl class="sr-only" id="card-preview-summary"></dl>
+        </section>
+
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-secondary" id="setup-back">← Back</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-link" id="setup-skip">Skip setup</button>
+        <button type="submit" class="btn btn-primary" id="setup-next">Next →</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="script.js?v=6"></script>
 </body>
 </html>

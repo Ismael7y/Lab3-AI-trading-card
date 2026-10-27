@@ -1,25 +1,199 @@
+/* =====================================================================
+   Colors
+   These are the default card's colors. site.js replaces them with colors
+   worked out from the main and accent colors the visitor picks.
+   ===================================================================== */
+
+:root {
+  --c-page1: #0f3e1b;
+  --c-page2: #2b8a3e;
+  --c-on-page: #ffffff;
+  --c-bar: #0f3e1b;
+  --c-card: #f6fce9;
+  --c-text: #212529;
+  --c-muted: #495057;
+  --c-main: #2b8a3e;
+  --c-on-main: #ffffff;
+  --c-dark: #2b8a3e;
+  --c-tint: #eaf8d2;
+  --c-track: #ddf4b7;
+  --c-fill: #2b8a3e;
+  --c-art1: #2b8a3e;
+  --c-art2: #a9e34b;
+  --c-badge-bg: #ffffff;
+  --c-badge-text: #2b8a3e;
+  --c-box-border: transparent;
+  --c-error: #c92a2a;
+  --c-error-bg: #fff5f5;
+  --c-input-border: #868e96;
+}
+
+/* =====================================================================
+   Page layout, navigation, footer
+   ===================================================================== */
+
 * {
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: linear-gradient(135deg, #1b4332, #52b788);
-  color: #222;
+/* Classes like .btn set display, which would otherwise beat the hidden attribute */
+[hidden] {
+  display: none !important;
 }
 
-/* Centers the card on the page */
-.page {
-  min-height: 100vh;
+body {
   display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  color: var(--c-text);
+  background: linear-gradient(135deg, var(--c-page1), var(--c-page2)) fixed;
+}
+
+/* One focus style for everything: a yellow ring with a dark edge shows on any color */
+:focus-visible {
+  outline: 3px solid #ffd43b;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px #000000;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  font-weight: bold;
+  color: #000000;
+  background: #ffd43b;
+  border-radius: 0 0 8px 8px;
+}
+
+.skip-link:focus {
+  top: 0;
+}
+
+.site-header {
+  background: var(--c-bar);
+}
+
+.site-nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  list-style: none;
+}
+
+.site-nav a {
+  display: inline-block;
+  min-height: 44px;
+  padding: 0.6rem 0.75rem;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 8px;
+}
+
+.site-nav a:hover {
+  text-decoration: underline;
+}
+
+.site-nav a[aria-current="page"] {
+  font-weight: bold;
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 6px;
+}
+
+.site-footer {
+  padding: 1.5rem 1rem 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--c-on-page);
+}
+
+.site-footer a {
+  color: inherit;
+  font-weight: bold;
+}
+
+/* Centers the content of each page */
+.page {
+  display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2rem;
+  gap: 1.5rem;
   padding: 1.5rem;
 }
+
+/* =====================================================================
+   Buttons
+   ===================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 48px;
+  padding: 0.6rem 1.25rem;
+  font: inherit;
+  font-weight: bold;
+  text-decoration: none;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  color: var(--c-on-main);
+  background: var(--c-main);
+  border-color: var(--c-main);
+}
+
+.btn-secondary {
+  color: var(--c-dark);
+  background: var(--c-card);
+  border-color: var(--c-dark);
+}
+
+.btn-link {
+  color: var(--c-dark);
+  background: transparent;
+  text-decoration: underline;
+}
+
+.btn:hover {
+  filter: brightness(1.08);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* =====================================================================
+   Trading card
+   ===================================================================== */
 
 .card {
   width: 100%;
@@ -40,8 +214,9 @@ body {
 }
 
 .card-face {
-  background: #f4fce3;
-  border: 8px solid #2b8a3e;
+  color: var(--c-text);
+  background: var(--c-card);
+  border: 8px solid var(--c-dark);
   border-radius: 20px;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
   overflow: hidden;
@@ -59,8 +234,8 @@ body {
   justify-content: center;
   padding: 2rem;
   text-align: center;
-  background: linear-gradient(135deg, #69db7c, #2b8a3e);
-  color: #fff;
+  color: var(--c-on-main);
+  background: var(--c-main);
   transform: rotateY(180deg);
 }
 
@@ -77,17 +252,17 @@ body {
 
 .flip-hint {
   margin: 2rem 0 0;
-  font-size: 0.8rem;
-  opacity: 0.8;
+  font-size: 0.9rem;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   padding: 0.75rem 1rem;
-  background: #37b24d;
-  color: #fff;
+  color: var(--c-on-main);
+  background: var(--c-main);
 }
 
 .card-name {
@@ -97,11 +272,13 @@ body {
 
 .card-type {
   padding: 0.2rem 0.7rem;
-  background: #fff;
-  color: #2b8a3e;
+  color: var(--c-badge-text);
+  background: var(--c-badge-bg);
+  border: 2px solid var(--c-box-border);
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: bold;
+  white-space: nowrap;
 }
 
 .card-art {
@@ -110,7 +287,8 @@ body {
   justify-content: center;
   height: 160px;
   margin: 1rem;
-  background: linear-gradient(135deg, #2b8a3e, #a9e34b);
+  background: linear-gradient(135deg, var(--c-art1), var(--c-art2));
+  border: 2px solid var(--c-box-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -174,21 +352,572 @@ body {
   }
 }
 
-/* Mini-game */
-.game {
-  width: 100%;
-  max-width: 560px;
-  padding: 1rem;
-  background: #f4fce3;
-  border: 8px solid #2b8a3e;
-  border-radius: 20px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
-  text-align: center;
+.card-body {
+  padding: 0 1rem;
 }
 
-.game h2 {
+.card-major {
   margin: 0 0 0.75rem;
-  color: #2b8a3e;
+}
+
+/* Three columns: name, bar, number. The name column fits the longest name. */
+.card-stats {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.card-stats li {
+  display: contents;
+}
+
+.stat-name {
+  max-width: 7.5rem;
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+.stat-bar {
+  height: 10px;
+  background: var(--c-track);
+  border: 1px solid var(--c-box-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.stat-fill {
+  display: block;
+  height: 100%;
+  background: var(--c-fill);
+  border-radius: 999px;
+}
+
+.stat-value {
+  min-width: 1.75rem;
+  text-align: right;
+  font-weight: bold;
+}
+
+.card-ability {
+  padding: 0.75rem;
+  background: var(--c-tint);
+  border: 2px solid var(--c-box-border);
+  border-radius: 12px;
+}
+
+.card-ability h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  color: var(--c-dark);
+  overflow-wrap: anywhere;
+}
+
+.card-ability p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.card-footer {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+}
+
+.card-footer p {
+  margin: 0;
+}
+
+.card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 440px;
+}
+
+/* =====================================================================
+   Setup popup (welcome + build your card)
+   ===================================================================== */
+
+.setup-dialog {
+  width: min(640px, calc(100% - 1.5rem));
+  max-height: calc(100vh - 1.5rem);
+  padding: 0;
+  color: var(--c-text);
+  background: var(--c-card);
+  border: 4px solid var(--c-dark);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+}
+
+.setup-dialog[open] {
+  display: flex;
+}
+
+.setup-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+.setup-form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.75rem 0.75rem 1.5rem;
+  color: var(--c-on-main);
+  background: var(--c-main);
+}
+
+.dialog-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.dialog-close {
+  min-width: 48px;
+  min-height: 48px;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: inherit;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.dialog-close:hover {
+  border-color: currentColor;
+}
+
+.dialog-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: bold;
+  border-bottom: 1px solid var(--c-track);
+}
+
+.progress-dots {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.progress-dots span {
+  width: 10px;
+  height: 10px;
+  background: var(--c-track);
+  border: 1px solid var(--c-dark);
+  border-radius: 999px;
+}
+
+.progress-dots span.current {
+  width: 28px;
+  background: var(--c-dark);
+}
+
+.dialog-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.dialog-body p {
+  margin: 0 0 1rem;
+}
+
+.dialog-body a {
+  color: var(--c-dark);
+  font-weight: bold;
+}
+
+.welcome-lead {
+  font-size: 1.15rem;
+}
+
+.dialog-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-top: 1px solid var(--c-track);
+}
+
+.dialog-footer .spacer {
+  flex: 1;
+}
+
+/* Form fields */
+.field {
+  margin: 0 0 1.1rem;
+}
+
+.field label,
+.field legend,
+.fieldset-title {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-weight: bold;
+}
+
+.hint {
+  margin: 0 0 0.35rem !important;
+  font-size: 0.9rem;
+  color: var(--c-muted);
+}
+
+.field input[type="text"],
+.field input[type="number"],
+.field textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--c-text);
+  background: var(--c-card);
+  border: 2px solid var(--c-input-border);
+  border-radius: 8px;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.field ::placeholder {
+  color: var(--c-text);
+  opacity: 0.45;
+}
+
+.field [aria-invalid="true"] {
+  border-color: var(--c-error);
+  border-width: 3px;
+}
+
+.field-error {
+  margin: 0.35rem 0 0 !important;
+  font-weight: bold;
+  color: var(--c-error);
+}
+
+.char-count {
+  margin: 0.25rem 0 0 !important;
+  font-size: 0.9rem;
+  color: var(--c-muted);
+  text-align: right;
+}
+
+.char-count.near-limit,
+.char-count.over-limit {
+  font-weight: bold;
+  color: var(--c-error);
+}
+
+fieldset.field {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 7rem;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.stat-row label {
+  font-weight: normal;
+  font-size: 0.9rem;
+}
+
+/* Emoji and color choices: real radio buttons, drawn as tappable tiles */
+.emoji-grid,
+.swatch-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.field .emoji-choice,
+.field .swatch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  font-weight: normal !important;
+  border: 2px solid var(--c-input-border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.emoji-choice {
+  justify-content: center;
+  width: 52px;
+  font-size: 1.6rem;
+}
+
+.swatch {
+  padding: 0.35rem 0.75rem 0.35rem 0.4rem;
+}
+
+.emoji-choice input,
+.swatch input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.emoji-choice:has(input:checked),
+.swatch:has(input[type="radio"]:checked) {
+  font-weight: bold !important;
+  background: var(--c-tint);
+  border-color: var(--c-text);
+  border-width: 3px;
+}
+
+.emoji-choice:has(input:focus-visible),
+.swatch:has(input[type="radio"]:focus-visible) {
+  outline: 3px solid #ffd43b;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px #000000;
+}
+
+.swatch-color {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+}
+
+/* The rainbow ring shows this one opens a color wheel */
+.swatch input[type="color"] {
+  width: 36px;
+  height: 36px;
+  padding: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(#ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+  cursor: pointer;
+}
+
+.swatch input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.swatch input[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+
+.error-summary {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.25rem;
+  color: var(--c-text);
+  background: var(--c-error-bg);
+  border: 3px solid var(--c-error);
+  border-radius: 12px;
+}
+
+.error-summary h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--c-error);
+}
+
+.error-summary ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.error-summary a {
+  color: var(--c-error);
+  font-weight: bold;
+}
+
+/* Small copy of the card shown on the preview step */
+.card-preview {
+  max-width: 300px;
+  margin: 0 auto 1rem;
+}
+
+.card-preview .card-face {
+  box-shadow: none;
+}
+
+/* =====================================================================
+   Help pages (Controls, FAQ) and the 404 page
+   ===================================================================== */
+
+.content {
+  width: 100%;
+  max-width: 760px;
+  padding: 1.5rem 1.75rem 2rem;
+  color: var(--c-text);
+  background: var(--c-card);
+  border: 8px solid var(--c-dark);
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.content h1 {
+  margin: 0 0 0.5rem;
+  color: var(--c-dark);
+}
+
+.content h2 {
+  margin: 2rem 0 0.5rem;
+  color: var(--c-dark);
+}
+
+.content a:not(.btn) {
+  color: var(--c-dark);
+  font-weight: bold;
+}
+
+.content .lead {
+  font-size: 1.1rem;
+}
+
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+}
+
+.content th,
+.content td {
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--c-track);
+}
+
+.content th {
+  background: var(--c-tint);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.8em;
+  padding: 0.1rem 0.45rem;
+  font: inherit;
+  font-size: 0.9em;
+  font-weight: bold;
+  text-align: center;
+  color: var(--c-text);
+  background: var(--c-tint);
+  border: 1px solid var(--c-input-border);
+  border-bottom-width: 3px;
+  border-radius: 6px;
+}
+
+details {
+  margin: 0 0 0.75rem;
+  background: var(--c-tint);
+  border: 2px solid var(--c-box-border);
+  border-radius: 12px;
+}
+
+summary {
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  font-weight: bold;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+details[open] summary {
+  border-bottom: 1px solid var(--c-track);
+  border-radius: 12px 12px 0 0;
+}
+
+details > :not(summary) {
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.touch-diagram {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 420px;
+  margin: 0.75rem 0;
+}
+
+.touch-diagram span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 56px;
+  min-height: 56px;
+  padding: 0 0.75rem;
+  font-weight: bold;
+  color: var(--c-on-main);
+  background: var(--c-main);
+  border-radius: 14px;
+}
+
+.page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+/* =====================================================================
+   Mini-game page
+   ===================================================================== */
+
+.game {
+  width: 100%;
+  max-width: 720px;
+  padding: 1rem;
+  color: var(--c-text);
+  background: var(--c-card);
+  border: 8px solid var(--c-dark);
+  border-radius: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.game-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.game h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--c-dark);
+}
+
+.game a {
+  color: var(--c-dark);
+  font-weight: bold;
 }
 
 #game {
@@ -200,121 +929,91 @@ body {
   image-rendering: pixelated;
 }
 
-#game:focus-visible {
-  outline: 3px solid #ffd43b;
-  outline-offset: 2px;
-}
-
 .game-help {
   margin: 0.75rem 0 0;
-  font-size: 0.9rem;
-  color: #2b5f34;
+  font-size: 0.95rem;
+  text-align: center;
 }
 
-/* On-screen buttons, only shown on touch screens */
-.touch-controls {
-  display: none;
-  gap: 0.5rem;
+.game-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-top: 0.75rem;
 }
 
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 1.4rem;
+  height: 1.4rem;
+  accent-color: var(--c-dark);
+}
+
+/* On-screen buttons, laid out like a handheld console */
+.touch-controls {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  touch-action: none;
+}
+
+.touch-controls[hidden] {
+  display: none;
+}
+
+.touch-group {
+  display: flex;
+  gap: 0.6rem;
+}
+
 .touch-controls button {
-  flex: 1;
-  padding: 0.75rem;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 0 0.9rem;
+  font: inherit;
   font-size: 1.5rem;
-  color: #fff;
-  background: #37b24d;
-  border: none;
-  border-radius: 12px;
+  font-weight: bold;
+  color: var(--c-on-main);
+  background: var(--c-main);
+  border: 2px solid var(--c-box-border);
+  border-radius: 16px;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
-@media (hover: none) and (pointer: coarse) {
-  .touch-controls {
-    display: flex;
-  }
+.touch-controls .touch-word {
+  font-size: 1.05rem;
 }
+
+.touch-controls button:active {
+  filter: brightness(0.85);
+}
+
+/* =====================================================================
+   Motion
+   ===================================================================== */
 
 @media (prefers-reduced-motion: reduce) {
   .flame,
   .card-sticker {
     animation: none;
   }
-}
 
-.card-body {
-  padding: 0 1rem;
-}
-
-.card-major {
-  margin: 0 0 0.75rem;
-}
-
-.card-stats {
-  list-style: none;
-  margin: 0 0 0.75rem;
-  padding: 0;
-}
-
-.card-stats li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
-  font-size: 0.9rem;
-}
-
-.stat-name {
-  width: 3.5rem;
-  font-weight: bold;
-}
-
-.stat-bar {
-  flex: 1;
-  height: 10px;
-  background: #d8f5a2;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.stat-fill {
-  display: block;
-  height: 100%;
-  background: #37b24d;
-  border-radius: 999px;
-}
-
-.stat-value {
-  width: 1.75rem;
-  text-align: right;
-  font-weight: bold;
-}
-
-.card-ability {
-  padding: 0.75rem;
-  background: #e9fac8;
-  border-radius: 12px;
-}
-
-.card-ability h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1rem;
-  color: #2b8a3e;
-}
-
-.card-ability p {
-  margin: 0;
-}
-
-.card-footer {
-  padding: 0.75rem 1rem;
-  text-align: center;
-  font-size: 0.8rem;
-  color: #5c7c5f;
-}
-
-.card-footer p {
-  margin: 0;
+  .card,
+  .card-inner {
+    transition: none;
+  }
 }

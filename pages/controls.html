@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controls · Ismael's Trading Card</title>
+  <link rel="stylesheet" href="../style.css?v=6">
+  <script src="../site.js?v=6"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="../index.html">My Card</a></li>
+        <li><a href="game.html">Play the Game</a></li>
+        <li><a href="controls.html" aria-current="page">Controls</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" class="page">
+    <article class="content">
+      <h1>How to play Cat World 1-1</h1>
+      <p class="lead">
+        Help the black cat run through World 1-1 and touch the flagpole at the end
+        before the timer runs out.
+      </p>
+
+      <h2>Keyboard controls</h2>
+      <p>Click the game (or Tab to it) first so it can hear your keys.</p>
+      <table>
+        <caption class="sr-only">Keyboard controls</caption>
+        <thead>
+          <tr><th scope="col">Action</th><th scope="col">Keys</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Move left / right</td><td><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> / <kbd>D</kbd></td></tr>
+          <tr><td>Jump (hold for higher)</td><td><kbd>Space</kbd>, <kbd>↑</kbd>, <kbd>W</kbd>, or <kbd>Z</kbd></td></tr>
+          <tr><td>Run</td><td><kbd>Shift</kbd> or <kbd>X</kbd></td></tr>
+          <tr><td>Start / restart</td><td><kbd>Enter</kbd>, or click the game</td></tr>
+          <tr><td>Pause / resume</td><td><kbd>P</kbd>, or the Pause button</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Touch controls</h2>
+      <p>
+        On a phone or tablet the on-screen buttons show up under the game. On a computer,
+        turn them on with <strong>Show on-screen controls</strong> to play with a mouse.
+      </p>
+      <div class="touch-diagram" aria-hidden="true">
+        <div><span>◀</span> <span>▶</span></div>
+        <div><span>Run</span> <span>Jump</span></div>
+      </div>
+      <ul>
+        <li><strong>◀ ▶</strong> (left side): move left and right.</li>
+        <li><strong>Run</strong>: hold it while moving to go faster.</li>
+        <li><strong>Jump</strong>: hold it longer to jump higher.</li>
+        <li>You can hold a direction and tap Jump at the same time.</li>
+        <li>Tap any button to start a new game.</li>
+      </ul>
+
+      <h2>Rules</h2>
+      <ul>
+        <li>Jump on mice from above to stomp them. Touching one from the side costs a life.</li>
+        <li>You have 3 lives and 400 seconds.</li>
+        <li>Hit <strong>?</strong> blocks from below for coins. Bricks break.</li>
+        <li>You can't walk back past the left edge of the screen.</li>
+        <li>The level only counts as cleared when you touch the flagpole. Jumping over it doesn't count.</li>
+        <li>The game pauses by itself if you switch tabs or click away.</li>
+      </ul>
+
+      <h2>Scoring</h2>
+      <table>
+        <caption class="sr-only">Points</caption>
+        <thead>
+          <tr><th scope="col">What</th><th scope="col">Points</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Coin</td><td>200</td></tr>
+          <tr><td>Breaking a brick</td><td>50</td></tr>
+          <tr><td>Stomping a mouse</td><td>100</td></tr>
+          <tr><td>Flagpole (higher is better)</td><td>400, 800, 2000, or 5000</td></tr>
+          <tr><td>Each second left on the timer</td><td>50</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Secret</h2>
+      <details>
+        <summary>Spoiler: a hidden bonus</summary>
+        <p>
+          If the last two digits of the timer match when you touch the flag (like 255 or 11),
+          that many fish bursts go off, worth 500 points each.
+        </p>
+      </details>
+
+      <div class="page-actions">
+        <a class="btn btn-primary" href="game.html">Play now →</a>
+        <a class="btn btn-secondary" href="faq.html">Read the FAQ</a>
+      </div>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <p>Built by Ismael with an AI agent ·
+      <a href="https://github.com/Ismael7y/Lab3-AI-trading-card/blob/main/docs/ai-usage.md">How AI was used</a>
+    </p>
+  </footer>
+</body>
+</html>

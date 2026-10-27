@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cat World 1-1 · Ismael's Trading Card</title>
+  <link rel="stylesheet" href="../style.css?v=6">
+  <script src="../site.js?v=6"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+
+  <header class="site-header">
+    <nav class="site-nav" aria-label="Main">
+      <ul>
+        <li><a href="../index.html">My Card</a></li>
+        <li><a href="game.html" aria-current="page">Play the Game</a></li>
+        <li><a href="controls.html">Controls</a></li>
+        <li><a href="faq.html">FAQ</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" class="page">
+    <section class="game" aria-labelledby="game-title">
+      <div class="game-top">
+        <a href="../index.html">← Back to my card</a>
+        <h1 id="game-title">Cat World 1-1</h1>
+        <a href="controls.html">How to play</a>
+      </div>
+
+      <canvas id="game" width="512" height="480" tabindex="0" role="application"
+        aria-label="Cat World 1-1 game. Press Enter to start. Arrow keys move, Space jumps, Shift runs, P pauses."></canvas>
+      <p class="sr-only" role="status" id="game-status"></p>
+
+      <p class="game-help">
+        Controls: <kbd>←</kbd> <kbd>→</kbd> move · <kbd>Space</kbd> jump · <kbd>Shift</kbd> run ·
+        <kbd>P</kbd> pause. <a href="controls.html">All controls</a>
+      </p>
+
+      <div class="game-toolbar">
+        <button type="button" class="btn btn-secondary" id="pause-button" disabled>⏸ Pause</button>
+        <label class="toggle">
+          <input type="checkbox" id="touch-toggle">
+          Show on-screen controls
+        </label>
+      </div>
+
+      <div class="touch-controls" id="touch-controls" hidden>
+        <div class="touch-group">
+          <button type="button" data-key="left" aria-label="Move left">◀</button>
+          <button type="button" data-key="right" aria-label="Move right">▶</button>
+        </div>
+        <div class="touch-group">
+          <button type="button" class="touch-word" data-key="run" aria-label="Run">Run</button>
+          <button type="button" class="touch-word" data-key="jump" aria-label="Jump">Jump</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Built by Ismael with an AI agent ·
+      <a href="https://github.com/Ismael7y/Lab3-AI-trading-card/blob/main/docs/ai-usage.md">How AI was used</a>
+    </p>
+  </footer>
+
+  <script src="game.js?v=6"></script>
+</body>
+</html>
